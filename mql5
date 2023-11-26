@@ -1,0 +1,106 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                   Aliens EA                                             |
+//|                                          Developer: Forex Robot Easy Team                  |
+//|                                          Website: forexroboteasy.com                  |
+//+------------------------------------------------------------------+
+
+// Set external input parameters
+extern int MagicNumber = 12345; // Magic number to identify the trades
+extern double LotSize = 0.01; // Lot size for each trade
+extern double StopLoss = 100; // Stop loss level for the trades
+extern double TakeProfit = 200; // Take profit level for the trades
+extern int MaxPullBackBars = 5; // Maximum number of pull back bars to identify
+
+// Define global variables
+int pullBackCount = 0; // Counter for pull back bars
+
+//+------------------------------------------------------------------+
+//|                                                   OnInit Function                                             |
+//+------------------------------------------------------------------+
+void OnInit()
+{
+   // Set trading parameters
+   SymbolInfoDouble(_Symbol, SYMBOL_TRADE_STOPS_LEVEL, StopLoss);
+   SymbolInfoDouble(_Symbol, SYMBOL_TRADE_FREEZE_LEVEL, TakeProfit);
+   
+   // Set account parameters
+   AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL, 0);
+   AccountInfoDouble(ACCOUNT_MARGIN_SO_SO, 0);
+}
+
+//+------------------------------------------------------------------+
+//|                                                   OnTick Function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   double currentBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double currentAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   
+   // Check if market is moving in one direction
+   if (currentBid > currentAsk)
+   {
+      pullBackCount++;
+      
+      // Check if pull back count exceeds maximum pull back bars
+      if (pullBackCount >= MaxPullBackBars)
+      {
+         // Initiate larger movement in the identified direction
+         double entryPrice = currentAsk;
+         double stopLossPrice = entryPrice - StopLoss * _Point;
+         double takeProfitPrice = entryPrice + TakeProfit * _Point;
+         
+         // Execute buy trade
+         int ticket = OrderSend(_Symbol, OP_BUY, LotSize, entryPrice, 0, stopLossPrice, takeProfitPrice, 'Aliens EA', MagicNumber, 0, clrGreen);
+         
+         // Check if trade was executed successfully
+         if (ticket > 0)
+         {
+            Print('Buy trade executed successfully');
+         }
+         else
+         {
+            Print('Failed to execute buy trade. Error code:', GetLastError());
+         }
+         
+         pullBackCount = 0;
+      }
+   }
+   else if (currentBid < currentAsk)
+   {
+      pullBackCount++;
+      
+      // Check if pull back count exceeds maximum pull back bars
+      if (pullBackCount >= MaxPullBackBars)
+      {
+         // Initiate larger movement in the identified direction
+         double entryPrice = currentBid;
+         double stopLossPrice = entryPrice + StopLoss * _Point;
+         double takeProfitPrice = entryPrice - TakeProfit * _Point;
+         
+         // Execute sell trade
+         int ticket = OrderSend(_Symbol, OP_SELL, LotSize, entryPrice, 0, stopLossPrice, takeProfitPrice, 'Aliens EA', MagicNumber, 0, clrRed);
+         
+         // Check if trade was executed successfully
+         if (ticket > 0)
+         {
+            Print('Sell trade executed successfully');
+         }
+         else
+         {
+            Print('Failed to execute sell trade. Error code:', GetLastError());
+         }
+         
+         pullBackCount = 0;
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//|                                                   OnDeinit Function                                             |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Perform cleanup tasks before the EA is removed from the chart
+   // No cleanup tasks required for this EA
+}
